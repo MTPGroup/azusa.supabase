@@ -595,20 +595,6 @@ export type Database = {
         }
         Returns: undefined
       }
-      match_documents: {
-        Args: {
-          filter_kb_ids: string[]
-          match_count: number
-          match_threshold: number
-          query_embedding: string
-        }
-        Returns: {
-          content: string
-          id: string
-          metadata: Json
-          similarity: number
-        }[]
-      }
       match_knowledge_documents: {
         Args: {
           knowledge_base_ids: string[]
