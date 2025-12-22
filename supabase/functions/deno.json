@@ -1,6 +1,8 @@
 {
   "lock": false,
   "imports": {
+    "@supabase/functions-js/edge-runtime.d.ts": "jsr:@supabase/functions-js@2/edge-runtime.d.ts",
+    "jose": "npm:jose@^5.2.0",
     "@hono/zod-validator": "npm:@hono/zod-validator@^0.7.6",
     "@langchain/classic": "npm:@langchain/classic@^1.0.7",
     "@langchain/community": "npm:@langchain/community@^1.1.1",
@@ -10,7 +12,7 @@
     "@supabase/supabase-js": "jsr:@supabase/supabase-js@^2.89.0",
     "hono": "npm:hono@^4.11.1",
     "langchain": "npm:langchain@^1.2.2",
-    "mammoth": "npm:mammoth@^1.11.0",
+    "officeparser": "npm:officeparser@^3.1.4",
     "zod": "npm:zod@^4.2.1"
   }
 }

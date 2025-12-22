@@ -1,7 +1,7 @@
 import {
+  authMiddleware,
   createApp,
   getSupabaseClient,
-  authMiddleware,
   profileMiddleware,
 } from "../_shared/hono.ts";
 import { z } from "zod";
@@ -11,7 +11,6 @@ import { OpenAIEmbeddings } from "@langchain/openai";
 import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 import { WebPDFLoader } from "@langchain/community/document_loaders/web/pdf";
 import { DocxLoader } from "@langchain/community/document_loaders/fs/docx";
-import { PPTXLoader } from "@langchain/community/document_loaders/fs/pptx";
 import { CSVLoader } from "@langchain/community/document_loaders/fs/csv";
 import { JSONLoader } from "@langchain/classic/document_loaders/fs/json";
 import { TextLoader } from "@langchain/classic/document_loaders/fs/text";
@@ -51,8 +50,7 @@ async function parseFileContent(
       "application/vnd.openxmlformats-officedocument.presentationml.presentation" ||
     fileName.endsWith(".pptx")
   ) {
-    const loader = new PPTXLoader(content);
-    return await loader.load();
+    throw new Error("不支持 .pptx 格式");
   }
 
   // CSV 文件 - 使用 LangChain CSVLoader
@@ -77,7 +75,7 @@ async function parseFileContent(
     mimeType === "application/vnd.ms-powerpoint" ||
     fileName.endsWith(".ppt")
   ) {
-    throw new Error("不支持 .ppt 格式，请转换为 .pptx 或 .pdf 后重新上传");
+    throw new Error("不支持 .ppt 格式");
   }
 
   // HTML 文件
@@ -408,14 +406,16 @@ app.post(
       .select("author_id")
       .eq("id", kbId)
       .single();
-    if (!kb)
+    if (!kb) {
       return c.json(
         { success: false, error: { message: "Knowledge base not found" } },
         404
       );
+    }
 
-    if (kb.author_id !== profile?.id)
+    if (kb.author_id !== profile?.id) {
       return c.json({ success: false, error: { message: "Forbidden" } }, 403);
+    }
 
     // 处理文件上传或 JSON 内容
     let content: string | Blob;
@@ -704,12 +704,15 @@ app.post(
       const queryEmbedding = await embeddings.embedQuery(query);
 
       // 调用 RPC 进行向量搜索
-      const { data: documents, error } = await supabase.rpc("match_documents", {
-        query_embedding: JSON.stringify(queryEmbedding),
-        match_threshold: threshold,
-        match_count: limit,
-        filter_kb_ids: knowledgeBaseIds,
-      });
+      const { data: documents, error } = await supabase.rpc(
+        "match_knowledge_documents",
+        {
+          query_embedding: JSON.stringify(queryEmbedding),
+          match_threshold: threshold,
+          match_count: limit,
+          knowledge_base_ids: knowledgeBaseIds,
+        }
+      );
 
       if (error) throw error;
 
