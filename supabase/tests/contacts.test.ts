@@ -40,100 +40,119 @@ Deno.test("Contacts API 集成测试", async (t) => {
     createCharResult.data?.id;
   if (!characterId) throw new Error("未能获取创建的角色 ID");
 
-  let nickname = `Nick_${Date.now()}`;
-
-  await t.step("GET /contacts - 应返回当前用户联系人列表", async () => {
-    const response = await fetch(CONTACTS_URL, {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    if (response.status === 404) {
-      throw new Error(
-        `Function not found at ${CONTACTS_URL}. Make sure 'supabase start' is running.`
-      );
-    }
-
-    assertEquals(response.status, 200);
-    const result = await response.json();
-    assertEquals(result.success, true);
-    assertExists(result.data.contacts);
-  });
-
-  await t.step("POST /contacts/:characterId - 应成功添加联系人", async () => {
-    const response = await fetch(`${CONTACTS_URL}/${characterId}`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    assertEquals(response.status, 201);
-    const result = await response.json();
-    assertEquals(result.success, true);
-    assertEquals(result.data.contactId, characterId);
-  });
-
-  await t.step(
-    "PUT /contacts/:characterId - 应成功更新联系人昵称",
-    async () => {
-      const response = await fetch(`${CONTACTS_URL}/${characterId}`, {
-        method: "PUT",
+  const nickname = `Nick_${Date.now()}`;
+  try {
+    await t.step("GET /contacts - 应返回当前用户联系人列表", async () => {
+      const response = await fetch(CONTACTS_URL, {
+        method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
         },
-        body: JSON.stringify({ nickname }),
+      });
+
+      if (response.status === 404) {
+        throw new Error(
+          `Function not found at ${CONTACTS_URL}. Make sure 'supabase start' is running.`
+        );
+      }
+
+      assertEquals(response.status, 200);
+      const result = await response.json();
+      assertEquals(result.success, true);
+      assertExists(result.data.contacts);
+    });
+
+    await t.step("POST /contacts/:characterId - 应成功添加联系人", async () => {
+      const response = await fetch(`${CONTACTS_URL}/${characterId}`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      assertEquals(response.status, 201);
+      const result = await response.json();
+      assertEquals(result.success, true);
+      assertEquals(result.data.contactId, characterId);
+    });
+
+    await t.step(
+      "PUT /contacts/:characterId - 应成功更新联系人昵称",
+      async () => {
+        const response = await fetch(`${CONTACTS_URL}/${characterId}`, {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ nickname }),
+        });
+
+        assertEquals(response.status, 200);
+        const result = await response.json();
+        assertEquals(result.success, true);
+      }
+    );
+
+    await t.step("GET /contacts - 应包含更新后的昵称", async () => {
+      const response = await fetch(CONTACTS_URL, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
 
       assertEquals(response.status, 200);
       const result = await response.json();
       assertEquals(result.success, true);
-    }
-  );
-
-  await t.step("GET /contacts - 应包含更新后的昵称", async () => {
-    const response = await fetch(CONTACTS_URL, {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      const found = result.data.contacts.find((c: any) => c.id === characterId);
+      assertExists(found);
+      assertEquals(found.nickname, nickname);
     });
 
-    assertEquals(response.status, 200);
-    const result = await response.json();
-    assertEquals(result.success, true);
-    const found = result.data.contacts.find((c: any) => c.id === characterId);
-    assertExists(found);
-    assertEquals(found.nickname, nickname);
-  });
+    await t.step(
+      "DELETE /contacts/:characterId - 应成功删除联系人",
+      async () => {
+        const response = await fetch(`${CONTACTS_URL}/${characterId}`, {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
 
-  await t.step("DELETE /contacts/:characterId - 应成功删除联系人", async () => {
-    const response = await fetch(`${CONTACTS_URL}/${characterId}`, {
+        assertEquals(response.status, 200);
+        const result = await response.json();
+        assertEquals(result.success, true);
+      }
+    );
+
+    await t.step("GET /contacts - 删除后不应包含该联系人", async () => {
+      const response = await fetch(CONTACTS_URL, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      assertEquals(response.status, 200);
+      const result = await response.json();
+      const found = result.data.contacts.find((c: any) => c.id === characterId);
+      assertEquals(found, undefined);
+    });
+  } finally {
+    // 测试结束后删除创建的角色，避免残留数据
+    const cleanupResp = await fetch(`${CHARACTERS_URL}/${characterId}`, {
       method: "DELETE",
       headers: {
         Authorization: `Bearer ${token}`,
       },
     });
 
-    assertEquals(response.status, 200);
-    const result = await response.json();
-    assertEquals(result.success, true);
-  });
+    if (cleanupResp.status !== 200 && cleanupResp.status !== 404) {
+      console.warn("清理测试角色失败", cleanupResp.status);
+    }
 
-  await t.step("GET /contacts - 删除后不应包含该联系人", async () => {
-    const response = await fetch(CONTACTS_URL, {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    assertEquals(response.status, 200);
-    const result = await response.json();
-    const found = result.data.contacts.find((c: any) => c.id === characterId);
-    assertEquals(found, undefined);
-  });
+    // 确保响应流被消费，避免资源泄漏
+    await cleanupResp.text();
+  }
 });
