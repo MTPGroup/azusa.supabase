@@ -2,15 +2,12 @@
   "tasks": {
     "start": "supabase start",
     "stop": "supabase stop",
-    "gen:types": "supabase gen types typescript --local > supabase/functions/shared/database.types.ts"
+    "gen:types": "supabase gen types typescript --local > supabase/functions/_shared/database.types.ts",
+    "test:api": "deno test --allow-net --allow-env --allow-read ./supabase/tests"
   },
   "imports": {
-    "@hono/zod-validator": "npm:@hono/zod-validator@^0.7.6",
-    "@langchain/core": "npm:@langchain/core@^1.1.7",
-    "@langchain/openai": "npm:@langchain/openai@^1.2.0",
-    "@supabase/supabase-js": "jsr:@supabase/supabase-js@^2.89.0",
-    "hono": "npm:hono@^4.11.1",
-    "langchain": "npm:langchain@^1.2.2",
-    "zod": "npm:zod@^4.2.1"
+    "@std/assert": "jsr:@std/assert@1",
+    "@std/dotenv": "jsr:@std/dotenv@^0.225.5",
+    "@supabase/supabase-js": "jsr:@supabase/supabase-js@^2"
   }
 }
