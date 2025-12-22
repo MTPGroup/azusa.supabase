@@ -236,6 +236,91 @@ app.post(
   }
 );
 
+// GET /knowledge/bases/:id 获取单一知识库详情
+app.get(
+  "/knowledge/bases/:id",
+  authMiddleware,
+  profileMiddleware,
+  zValidator("param", knowledgeBaseParamsSchema),
+  async (c) => {
+    const supabase = c.get("supabase");
+    const { id: kbId } = c.req.valid("param");
+
+    const { data: kb, error } = await supabase
+      .from("knowledge_bases")
+      .select("*, author:profiles(username, avatar)")
+      .eq("id", kbId)
+      .single();
+
+    if (error || !kb) {
+      return c.json(
+        { success: false, error: { message: "知识库不存在" } },
+        404
+      );
+    }
+
+    return c.json({
+      success: true,
+      message: "成功获取知识库详情",
+      data: {
+        knowledgeBase: {
+          id: kb.id,
+          name: kb.name,
+          description: kb.description,
+          isPublic: kb.is_public,
+          author: {
+            id: kb.author_id,
+            username: kb.author?.username,
+            avatar: kb.author?.avatar,
+          },
+          createdAt: kb.created_at,
+          updatedAt: kb.updated_at,
+        },
+      },
+      timestamp: new Date().toISOString(),
+    });
+  }
+);
+
+// GET /knowledge/bases/:id/files 获取知识库下的文件列表
+app.get(
+  "/knowledge/bases/:id/files",
+  authMiddleware,
+  profileMiddleware,
+  zValidator("param", knowledgeBaseParamsSchema),
+  async (c) => {
+    const supabase = c.get("supabase");
+    const { id: kbId } = c.req.valid("param");
+
+    const { data: files, error } = await supabase
+      .from("knowledge_files")
+      .select("*")
+      .eq("knowledge_base_id", kbId)
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+
+    return c.json({
+      success: true,
+      message: "成功获取文件列表",
+      data: {
+        files: files.map((f) => ({
+          id: f.id,
+          fileName: f.file_name,
+          filePath: f.file_path,
+          fileSize: f.file_size,
+          fileType: f.file_type,
+          status: f.status,
+          chunkCount: f.chunk_count,
+          errorMessage: f.error_message,
+          createdAt: f.created_at,
+        })),
+      },
+      timestamp: new Date().toISOString(),
+    });
+  }
+);
+
 // PATCH /knowledge/bases/:id 更新知识库
 app.patch(
   "/knowledge/bases/:id",

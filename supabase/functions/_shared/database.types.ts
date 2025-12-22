@@ -437,6 +437,39 @@ export type Database = {
           },
         ]
       }
+      plugin_likes: {
+        Row: {
+          created_at: string
+          plugin_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          plugin_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          plugin_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plugin_likes_plugin_id_fkey"
+            columns: ["plugin_id"]
+            isOneToOne: false
+            referencedRelation: "plugins"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plugin_likes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       plugin_subscriptions: {
         Row: {
           is_active: boolean
