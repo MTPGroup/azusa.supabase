@@ -66,7 +66,7 @@ docker-compose logs -f functions
 
 服务端点:
 - **API Gateway**: http://localhost:8000
-- **Studio (管理面板)**: http://localhost:3000
+- **Studio (管理面板)**: http://localhost:8000
 - **MinIO (文件存储)**: http://localhost:9001
 
 ### 4. 创建测试用户
