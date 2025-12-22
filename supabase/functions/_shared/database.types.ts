@@ -78,6 +78,102 @@ export type Database = {
           },
         ]
       }
+      chat_members: {
+        Row: {
+          character_id: string | null
+          chat_id: string
+          id: string
+          joined_at: string
+          member_type: string
+          profile_id: string | null
+          role: string
+          updated_at: string
+        }
+        Insert: {
+          character_id?: string | null
+          chat_id: string
+          id?: string
+          joined_at?: string
+          member_type: string
+          profile_id?: string | null
+          role?: string
+          updated_at?: string
+        }
+        Update: {
+          character_id?: string | null
+          chat_id?: string
+          id?: string
+          joined_at?: string
+          member_type?: string
+          profile_id?: string | null
+          role?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_members_character_id_fkey"
+            columns: ["character_id"]
+            isOneToOne: false
+            referencedRelation: "characters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_members_chat_id_fkey"
+            columns: ["chat_id"]
+            isOneToOne: false
+            referencedRelation: "chats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_members_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chats: {
+        Row: {
+          avatar: string | null
+          created_at: string
+          id: string
+          is_group: boolean
+          last_message: string | null
+          name: string | null
+          owner_id: string
+          updated_at: string
+        }
+        Insert: {
+          avatar?: string | null
+          created_at?: string
+          id?: string
+          is_group?: boolean
+          last_message?: string | null
+          name?: string | null
+          owner_id: string
+          updated_at?: string
+        }
+        Update: {
+          avatar?: string | null
+          created_at?: string
+          id?: string
+          is_group?: boolean
+          last_message?: string | null
+          name?: string | null
+          owner_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chats_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contacts: {
         Row: {
           added_at: string
@@ -276,6 +372,67 @@ export type Database = {
             columns: ["knowledge_base_id"]
             isOneToOne: false
             referencedRelation: "knowledge_bases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      messages: {
+        Row: {
+          chat_id: string
+          content: Json | null
+          created_at: string
+          id: string
+          message_type: string
+          metadata: Json
+          sender_character_id: string | null
+          sender_profile_id: string | null
+          sender_type: string
+          updated_at: string
+        }
+        Insert: {
+          chat_id: string
+          content?: Json | null
+          created_at?: string
+          id?: string
+          message_type?: string
+          metadata?: Json
+          sender_character_id?: string | null
+          sender_profile_id?: string | null
+          sender_type: string
+          updated_at?: string
+        }
+        Update: {
+          chat_id?: string
+          content?: Json | null
+          created_at?: string
+          id?: string
+          message_type?: string
+          metadata?: Json
+          sender_character_id?: string | null
+          sender_profile_id?: string | null
+          sender_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_chat_id_fkey"
+            columns: ["chat_id"]
+            isOneToOne: false
+            referencedRelation: "chats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_sender_character_id_fkey"
+            columns: ["sender_character_id"]
+            isOneToOne: false
+            referencedRelation: "characters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_sender_profile_id_fkey"
+            columns: ["sender_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
