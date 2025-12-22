@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>邀请函</title>
+    <style>
+        /* 重置样式 */
+        body, p, h1, h2, h3, h4, h5, h6 { margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif; line-height: 1.6; color: #333333; background-color: #f4f4f5; }
+        .container { max-width: 600px; margin: 0 auto; padding: 40px 20px; }
+        .card { background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); overflow: hidden; }
+        .header { background-color: #18181b; padding: 30px; text-align: center; }
+        .header h1 { color: #ffffff; font-size: 24px; font-weight: 600; letter-spacing: 1px; }
+        .content { padding: 40px 30px; text-align: center; }
+        .icon { font-size: 48px; margin-bottom: 20px; }
+        .title { font-size: 20px; font-weight: 600; margin-bottom: 16px; color: #18181b; }
+        .text { color: #52525b; margin-bottom: 30px; font-size: 16px; }
+        .button { display: inline-block; background-color: #2563eb; color: #ffffff; text-decoration: none; padding: 12px 32px; border-radius: 6px; font-weight: 500; transition: background-color 0.2s; }
+        .button:hover { background-color: #1d4ed8; }
+        .footer { padding: 24px; text-align: center; color: #71717a; font-size: 12px; background-color: #fafafa; border-top: 1px solid #e4e4e7; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="header"><h1>Azusa</h1></div>
+            <div class="content">
+                <div class="icon">👋</div>
+                <h2 class="title">您收到了邀请</h2>
+                <p class="text">
+                    您被邀请加入 Azusa。<br>
+                    请点击下方链接接受邀请并创建账户：
+                </p>
+                <a href="{{ .ConfirmationURL }}" class="button" target="_blank">接受邀请</a>
+                <p style="margin-top: 30px; font-size: 14px; color: #a1a1aa;">
+                    如果您无法点击按钮，请复制以下链接到浏览器打开：<br>
+                    <span style="color: #2563eb; word-break: break-all;">{{ .ConfirmationURL }}</span>
+                </p>
+            </div>
+            <div class="footer">
+                <p>此邮件由系统自动发送，请勿回复。</p>
+                <p>© 2025 MTPGroup. All rights reserved.</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
