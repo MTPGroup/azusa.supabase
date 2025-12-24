@@ -1,7 +1,7 @@
 import {
+  authMiddleware,
   createApp,
   getSupabaseClient,
-  authMiddleware,
   profileMiddleware,
 } from "../_shared/hono.ts";
 import { z } from "zod";
@@ -30,16 +30,16 @@ app.get("/plugins", async (c) => {
   const { data: userData } = await supabase.auth.getUser();
   const { data: profile } = userData?.user?.id
     ? await supabase
-        .from("profiles")
-        .select("id")
-        .eq("uid", userData.user.id)
-        .single()
+      .from("profiles")
+      .select("id")
+      .eq("uid", userData.user.id)
+      .single()
     : { data: null };
 
   let query = supabase
     .from("plugins")
     .select(
-      "*, author:profiles!plugins_author_id_fkey(username, avatar), is_liked:plugin_likes!left(user_id), is_subscribed:plugin_subscriptions!left(user_id)"
+      "*, author:profiles!plugins_author_id_fkey(username, avatar), is_liked:plugin_likes!left(user_id), is_subscribed:plugin_subscriptions!left(user_id)",
     )
     .order("created_at", { ascending: false });
 
@@ -111,7 +111,7 @@ app.post(
           },
           timestamp: new Date().toISOString(),
         },
-        400
+        400,
       );
     }
   }),
@@ -140,9 +140,9 @@ app.post(
         data: { plugin },
         timestamp: new Date().toISOString(),
       },
-      201
+      201,
     );
-  }
+  },
 );
 
 // GET /plugins/:id 获取插件详情
@@ -160,7 +160,7 @@ app.get(
           },
           timestamp: new Date().toISOString(),
         },
-        400
+        400,
       );
     }
   }),
@@ -174,11 +174,12 @@ app.get(
       .eq("id", id)
       .single();
 
-    if (error || !plugin)
+    if (error || !plugin) {
       return c.json(
         { success: false, error: { message: "Plugin not found" } },
-        404
+        404,
       );
+    }
 
     return c.json({
       success: true,
@@ -195,7 +196,7 @@ app.get(
       },
       timestamp: new Date().toISOString(),
     });
-  }
+  },
 );
 
 // POST /plugins/:id/subscribe 订阅插件
@@ -215,7 +216,7 @@ app.post(
           },
           timestamp: new Date().toISOString(),
         },
-        400
+        400,
       );
     }
   }),
@@ -238,7 +239,7 @@ app.post(
       data: null,
       timestamp: new Date().toISOString(),
     });
-  }
+  },
 );
 
 // DELETE /plugins/:id/subscribe 取消订阅
@@ -258,7 +259,7 @@ app.delete(
           },
           timestamp: new Date().toISOString(),
         },
-        400
+        400,
       );
     }
   }),
@@ -280,7 +281,7 @@ app.delete(
       data: null,
       timestamp: new Date().toISOString(),
     });
-  }
+  },
 );
 
 // POST /plugins/:id/like 点赞插件
@@ -300,7 +301,7 @@ app.post(
           },
           timestamp: new Date().toISOString(),
         },
-        400
+        400,
       );
     }
   }),
@@ -328,7 +329,7 @@ app.post(
       data: null,
       timestamp: new Date().toISOString(),
     });
-  }
+  },
 );
 
 // DELETE /plugins/:id/like 取消点赞
@@ -348,7 +349,7 @@ app.delete(
           },
           timestamp: new Date().toISOString(),
         },
-        400
+        400,
       );
     }
   }),
@@ -370,7 +371,7 @@ app.delete(
       data: null,
       timestamp: new Date().toISOString(),
     });
-  }
+  },
 );
 
 // PUT /plugins/:id 更新插件
@@ -396,14 +397,14 @@ app.put(
     if (fetchError || !existing) {
       return c.json(
         { success: false, error: { message: "Plugin not found" } },
-        404
+        404,
       );
     }
 
     if (existing.author_id !== profile.id) {
       return c.json(
         { success: false, error: { message: "Unauthorized" } },
-        403
+        403,
       );
     }
 
@@ -425,7 +426,7 @@ app.put(
       data: { plugin },
       timestamp: new Date().toISOString(),
     });
-  }
+  },
 );
 
 // DELETE /plugins/:id 删除插件
@@ -449,14 +450,14 @@ app.delete(
     if (fetchError || !existing) {
       return c.json(
         { success: false, error: { message: "Plugin not found" } },
-        404
+        404,
       );
     }
 
     if (existing.author_id !== profile.id) {
       return c.json(
         { success: false, error: { message: "Unauthorized" } },
-        403
+        403,
       );
     }
 
@@ -472,7 +473,7 @@ app.delete(
       message: "插件删除成功",
       timestamp: new Date().toISOString(),
     });
-  }
+  },
 );
 
 Deno.serve(app.fetch);

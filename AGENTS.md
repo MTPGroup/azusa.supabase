@@ -1,0 +1,39 @@
+# Repository Guidelines
+
+## Project Structure & Module Organization
+This repository hosts a Supabase-backed API built with Deno edge functions. Key paths:
+- `supabase/functions/`: Edge Functions organized by feature (`profiles`, `settings`, `characters`, `knowledge`, etc.), with shared helpers in `_shared`.
+- `supabase/migrations/`: Database schema migrations.
+- `supabase/tests/`: Deno integration tests for API behavior.
+- `utils/`: Scripts such as type generation.
+- `docker-compose.yml`: Local development stack.
+- `volumes/`: Docker persistent data (do not hand-edit).
+
+## Build, Test, and Development Commands
+Common commands (run from the repo root):
+- `docker-compose up -d`: Start the local Supabase stack and services.
+- `docker-compose logs -f functions`: Tail edge function logs.
+- `docker-compose restart functions`: Restart edge functions after changes.
+- `deno task gen:types`: Generate TypeScript types (writes to project files).
+- `deno task test:api`: Run API tests via Deno.
+- `TEST_ENV=docker deno test --allow-all`: Run tests against Docker (as documented).
+
+## Coding Style & Naming Conventions
+- Language: TypeScript running on Deno (edge functions).
+- Formatting: prefer `deno fmt` for consistent formatting.
+- Organization: place new endpoints in `supabase/functions/<feature>/` and shared utilities in `supabase/functions/_shared/`.
+- Naming: keep feature folders in kebab-case and keep API modules feature-scoped.
+
+## Testing Guidelines
+- Tests live in `supabase/tests/` and use Deno’s built-in test runner.
+- Keep test names descriptive and behavior-focused.
+- Use `TEST_ENV=docker` or `TEST_ENV=cli` when targeting different runtimes.
+
+## Commit & Pull Request Guidelines
+- Commit messages follow a lightweight Conventional Commits style, often prefixed with an emoji, e.g. `✨ feat: ...` or `📝 fix: ...`.
+- PRs should include: a short summary, testing notes (commands run), and any relevant configuration changes.
+- Link related issues when available and include screenshots only when changing observable UI or API responses.
+
+## Security & Configuration Notes
+- Copy `.env.example` to `.env` before running locally.
+- Row Level Security (RLS) is enabled; ensure new tables and policies follow existing patterns.

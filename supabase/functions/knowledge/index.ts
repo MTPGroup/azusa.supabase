@@ -139,8 +139,8 @@ const knowledgeBaseParamsSchema = z.object({
 });
 
 // GET /knowledge/bases 获取知识库列表
-app.get("/knowledge/bases", authMiddleware, profileMiddleware, async (c) => {
-  const supabase = c.get("supabase");
+app.get("/knowledge/bases", async (c) => {
+  const supabase = getSupabaseClient(c.req.raw);
   const isPublic = c.req.query("public") === "true";
   const authorId = c.req.query("authorId");
 
@@ -239,11 +239,9 @@ app.post(
 // GET /knowledge/bases/:id 获取单一知识库详情
 app.get(
   "/knowledge/bases/:id",
-  authMiddleware,
-  profileMiddleware,
   zValidator("param", knowledgeBaseParamsSchema),
   async (c) => {
-    const supabase = c.get("supabase");
+    const supabase = getSupabaseClient(c.req.raw);
     const { id: kbId } = c.req.valid("param");
 
     const { data: kb, error } = await supabase
@@ -285,11 +283,9 @@ app.get(
 // GET /knowledge/bases/:id/files 获取知识库下的文件列表
 app.get(
   "/knowledge/bases/:id/files",
-  authMiddleware,
-  profileMiddleware,
   zValidator("param", knowledgeBaseParamsSchema),
   async (c) => {
-    const supabase = c.get("supabase");
+    const supabase = getSupabaseClient(c.req.raw);
     const { id: kbId } = c.req.valid("param");
 
     const { data: files, error } = await supabase
