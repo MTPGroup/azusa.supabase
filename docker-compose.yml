@@ -378,6 +378,26 @@ services:
       DASHSCOPE_API_BASE_URL: ${DASHSCOPE_API_BASE_URL}
     command: ["start", "--main-service", "/home/deno/functions/main"]
 
+  knowledge-worker:
+    image: denoland/deno:alpine-1.45.5
+    restart: unless-stopped
+    depends_on:
+      kong:
+        condition: service_started
+    environment:
+      SERVICE_ROLE_KEY: ${SERVICE_ROLE_KEY}
+      SUPABASE_URL: ${SUPABASE_URL:-http://kong:8000}
+      DASHSCOPE_API_KEY: ${DASHSCOPE_API_KEY}
+      DASHSCOPE_API_BASE_URL: ${DASHSCOPE_API_BASE_URL}
+      POLL_INTERVAL_MS: ${KNOWLEDGE_PROCESS_POLL_MS:-10000}
+      DENO_DIR: /deno-dir
+    volumes:
+      - ./:/app:ro
+      - worker-deno-dir:/deno-dir
+    working_dir: /app
+    command: ["deno", "run", "--allow-net", "--allow-env", "--allow-read", "--no-lock", "/app/supabase/workers/knowledge-process-worker.ts"]
+
+
   # analytics 服务已禁用以提升性能，如需启用请取消注释
   # analytics:
   #   container_name: supabase-analytics
@@ -592,3 +612,4 @@ services:
 
 volumes:
   db-config:
+  worker-deno-dir:
