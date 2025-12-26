@@ -6,7 +6,6 @@ import {
 } from "../_shared/hono.ts";
 import { z } from "zod";
 import { zValidator } from "@hono/zod-validator";
-import { OpenAIEmbeddings } from "@langchain/openai";
 
 function makeSafeStorageFileName(fileName: string): string {
   const trimmed = fileName.trim();
@@ -43,6 +42,11 @@ const searchKnowledgeSchema = z.object({
 
 const knowledgeBaseParamsSchema = z.object({
   id: z.uuid(),
+});
+
+const knowledgeDocumentParamsSchema = z.object({
+  id: z.uuid(),
+  fileId: z.uuid(),
 });
 
 // GET /knowledge/bases 获取知识库列表
@@ -218,6 +222,89 @@ app.get(
           createdAt: f.created_at,
         })),
       },
+      timestamp: new Date().toISOString(),
+    });
+  },
+);
+
+// DELETE /knowledge/bases/:id/files/:fileId 删除知识库下的文件
+app.delete(
+  "/knowledge/bases/:id/files/:fileId",
+  authMiddleware,
+  profileMiddleware,
+  zValidator("param", knowledgeDocumentParamsSchema, (result, c) => {
+    if (!result.success) {
+      return c.json(
+        {
+          success: false,
+          error: {
+            message: "Validation Error",
+            code: "VALIDATION_ERROR",
+            details: result.error,
+          },
+          timestamp: new Date().toISOString(),
+        },
+        400,
+      );
+    }
+  }),
+  async (c) => {
+    const supabase = c.get("supabase");
+    const profile = c.get("profile");
+    const { id: kbId, fileId } = c.req.valid("param");
+
+    const { data: kb } = await supabase
+      .from("knowledge_bases")
+      .select("author_id")
+      .eq("id", kbId)
+      .single();
+
+    if (!kb) {
+      return c.json(
+        { success: false, error: { message: "Knowledge base not found" } },
+        404,
+      );
+    }
+
+    if (kb.author_id !== profile?.id) {
+      return c.json({ success: false, error: { message: "Forbidden" } }, 403);
+    }
+
+    const { data: fileRecord } = await supabase
+      .from("knowledge_files")
+      .select("*")
+      .eq("id", fileId)
+      .eq("knowledge_base_id", kbId)
+      .single();
+
+    if (!fileRecord) {
+      return c.json(
+        { success: false, error: { message: "File not found" } },
+        404,
+      );
+    }
+
+    try {
+      const { error: storageError } = await supabase.storage
+        .from("knowledge_files")
+        .remove([fileRecord.file_path]);
+      if (storageError) {
+        console.error("Failed to remove file from storage:", storageError);
+      }
+    } catch (err) {
+      console.error("Failed to remove file from storage:", err);
+    }
+
+    const { error: fileDeleteError } = await supabase
+      .from("knowledge_files")
+      .delete()
+      .eq("id", fileRecord.id);
+
+    if (fileDeleteError) throw fileDeleteError;
+
+    return c.json({
+      success: true,
+      message: "文档删除成功",
       timestamp: new Date().toISOString(),
     });
   },
@@ -511,7 +598,7 @@ app.post(
         data: { file: fileRecord },
         timestamp: new Date().toISOString(),
       },
-      202,
+      201,
     );
   },
 );
@@ -542,6 +629,8 @@ app.post(
     const { query, knowledgeBaseIds, limit, threshold } = body;
 
     try {
+      const { OpenAIEmbeddings } = await import("npm:@langchain/openai@1.2.0");
+
       // 生成查询向量
       const embeddings = new OpenAIEmbeddings({
         model: "text-embedding-v4",
