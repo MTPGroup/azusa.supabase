@@ -2,7 +2,7 @@ import { assertEquals, assertExists } from "@std/assert";
 import { supabase } from "./shared.ts";
 
 // 确保在运行测试前，Supabase 本地服务已启动
-const BASE_URL = Deno.env.get("SUPABASE_URL") ?? "http://127.0.0.1:54321";
+const BASE_URL = Deno.env.get("SUPABASE_URL") ?? "http://127.0.0.1:8000";
 const FUNCTION_URL = `${BASE_URL}/functions/v1/profiles`;
 
 Deno.test("Profiles API 集成测试", async (t) => {
@@ -12,7 +12,7 @@ Deno.test("Profiles API 集成测试", async (t) => {
   } = await supabase.auth.getSession();
   if (!session) {
     throw new Error(
-      "未获取到 Session，请检查 shared.ts 中的登录逻辑以及是否已启动 Supabase"
+      "未获取到 Session，请检查 shared.ts 中的登录逻辑以及是否已启动 Supabase",
     );
   }
   const token = session.access_token;
@@ -28,7 +28,7 @@ Deno.test("Profiles API 集成测试", async (t) => {
     // 如果返回 404，可能是函数未部署或未启动
     if (response.status === 404) {
       throw new Error(
-        `Function not found at ${FUNCTION_URL}. Make sure 'supabase start' is running.`
+        `Function not found at ${FUNCTION_URL}. Make sure 'supabase start' is running.`,
       );
     }
 
