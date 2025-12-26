@@ -6,14 +6,7 @@ import {
 } from "../_shared/hono.ts";
 import { z } from "zod";
 import { zValidator } from "@hono/zod-validator";
-import { Document } from "langchain";
 import { OpenAIEmbeddings } from "@langchain/openai";
-import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
-import { WebPDFLoader } from "@langchain/community/document_loaders/web/pdf";
-import { DocxLoader } from "@langchain/community/document_loaders/fs/docx";
-import { CSVLoader } from "@langchain/community/document_loaders/fs/csv";
-import { JSONLoader } from "@langchain/classic/document_loaders/fs/json";
-import { TextLoader } from "@langchain/classic/document_loaders/fs/text";
 
 function makeSafeStorageFileName(fileName: string): string {
   const trimmed = fileName.trim();
