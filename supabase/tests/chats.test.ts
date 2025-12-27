@@ -1,7 +1,7 @@
 import { assertEquals, assertExists } from "@std/assert";
 import { supabase } from "./shared.ts";
 
-const BASE_URL = Deno.env.get("SUPABASE_URL") ?? "http://127.0.0.1:54321";
+const BASE_URL = Deno.env.get("SUPABASE_URL") ?? "http://127.0.0.1:8000";
 const FUNCTION_URL = `${BASE_URL}/functions/v1/chats`;
 
 type Profile = { id: string };
@@ -13,7 +13,7 @@ denoTest("Chats API 集成测试", async (t) => {
 
   if (!session) {
     throw new Error(
-      "未获取到 Session，请检查 shared.ts 中的登录逻辑以及是否已启动 Supabase"
+      "未获取到 Session，请检查 shared.ts 中的登录逻辑以及是否已启动 Supabase",
     );
   }
   const token = session.access_token;
@@ -84,7 +84,7 @@ denoTest("Chats API 集成测试", async (t) => {
     assertExists(result.data?.chats);
     assertEquals(
       result.data.chats.some((c: any) => c.id === createdChatId),
-      true
+      true,
     );
   });
 
@@ -140,7 +140,7 @@ denoTest("Chats API 集成测试", async (t) => {
           ],
         }),
         signal: controller.signal,
-      }
+      },
     );
 
     clearTimeout(timeout);

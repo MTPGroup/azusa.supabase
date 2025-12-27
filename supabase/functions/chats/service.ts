@@ -1,18 +1,27 @@
 import { SupabaseClient } from "@supabase/supabase-js";
 import { Database } from "../_shared/database.types.ts";
 import { z } from "zod";
-import { tool, AIMessage, HumanMessage, createAgent } from "langchain";
 import { MessageContent } from "./types.ts";
-import { ChatOpenAI } from "@langchain/openai";
+
+type LangchainDeps = {
+  tool: typeof import("langchain").tool;
+  AIMessage: typeof import("langchain").AIMessage;
+  HumanMessage: typeof import("langchain").HumanMessage;
+  createAgent: typeof import("langchain").createAgent;
+  ChatOpenAI: typeof import("@langchain/openai").ChatOpenAI;
+};
 
 function jsonSchemaToZod(schema: any): z.ZodTypeAny {
   if (!schema) return z.any();
-  if (schema.type === "string")
+  if (schema.type === "string") {
     return z.string().describe(schema.description || "");
-  if (schema.type === "number" || schema.type === "integer")
+  }
+  if (schema.type === "number" || schema.type === "integer") {
     return z.number().describe(schema.description || "");
-  if (schema.type === "boolean")
+  }
+  if (schema.type === "boolean") {
     return z.boolean().describe(schema.description || "");
+  }
   if (schema.type === "array") {
     return z
       .array(jsonSchemaToZod(schema.items))
@@ -34,6 +43,24 @@ function jsonSchemaToZod(schema: any): z.ZodTypeAny {
 export class ChatService {
   constructor(private supabase: SupabaseClient<Database>) {}
 
+  private langchainDepsPromise?: Promise<LangchainDeps>;
+
+  private async getLangchainDeps(): Promise<LangchainDeps> {
+    if (!this.langchainDepsPromise) {
+      this.langchainDepsPromise = Promise.all([
+        import("langchain"),
+        import("@langchain/openai"),
+      ]).then(([langchain, openai]) => ({
+        tool: langchain.tool,
+        AIMessage: langchain.AIMessage,
+        HumanMessage: langchain.HumanMessage,
+        createAgent: langchain.createAgent,
+        ChatOpenAI: openai.ChatOpenAI,
+      }));
+    }
+    return this.langchainDepsPromise;
+  }
+
   async runPluginInSandbox(pluginCode: string, args: unknown) {
     // 使用权限为 none 的 Worker 作为沙箱执行插件代码
     const workerCode = `
@@ -50,13 +77,16 @@ export class ChatService {
     `;
 
     const blob = new Blob([workerCode], { type: "application/javascript" });
-    const worker = new Worker(URL.createObjectURL(blob), {
-      type: "module",
-      // 禁用权限，防止插件访问外部资源
-      deno: {
-        permissions: "none",
-      },
-    } as WorkerOptions & { deno?: { permissions: "none" | "inherit" } });
+    const worker = new Worker(
+      URL.createObjectURL(blob),
+      {
+        type: "module",
+        // 禁用权限，防止插件访问外部资源
+        deno: {
+          permissions: "none",
+        },
+      } as WorkerOptions & { deno?: { permissions: "none" | "inherit" } },
+    );
 
     return await new Promise((resolve, reject) => {
       const timeout = setTimeout(() => {
@@ -108,7 +138,7 @@ export class ChatService {
           character:characters(*),
           profile:profiles(*)
         )
-      `
+      `,
       )
       .in("id", chatIds);
 
@@ -116,7 +146,7 @@ export class ChatService {
 
     return (chats || []).map((chat: any) => {
       const aiMember = chat?.members?.find(
-        (m: any) => m.member_type === "character"
+        (m: any) => m.member_type === "character",
       )?.character;
 
       return {
@@ -138,7 +168,7 @@ export class ChatService {
     userId: string,
     characterId: string,
     name: string,
-    avatar?: string
+    avatar?: string,
   ) {
     // 查找现有的私聊（is_group=false）且包含该用户与指定角色
     const { data: userChats } = await this.supabase
@@ -251,10 +281,10 @@ export class ChatService {
       updatedAt: chat.updated_at,
       owner: chat.owner
         ? {
-            id: chat.owner.uid,
-            username: chat.owner.username,
-            avatar: chat.owner.avatar,
-          }
+          id: chat.owner.uid,
+          username: chat.owner.username,
+          avatar: chat.owner.avatar,
+        }
         : null,
     };
   }
@@ -263,7 +293,7 @@ export class ChatService {
     chatId: string,
     ownerProfileId: string,
     name?: string,
-    avatar?: string
+    avatar?: string,
   ) {
     const payload: Record<string, unknown> = {};
     if (name) payload.name = name;
@@ -300,7 +330,7 @@ export class ChatService {
       *,
       sender_profile:profiles(*),
       sender_character:characters(*)
-    `
+    `,
       )
       .eq("chat_id", chatId)
       .order("created_at", { ascending: false })
@@ -324,21 +354,20 @@ export class ChatService {
           createdAt: msg.created_at,
           sender: msg.sender_profile
             ? {
-                name: msg.sender_profile.username,
-                avatar: msg.sender_profile.avatar,
-              }
+              name: msg.sender_profile.username,
+              avatar: msg.sender_profile.avatar,
+            }
             : msg.sender_character
             ? {
-                name: msg.sender_character.name,
-                avatar: msg.sender_character.avatar,
-              }
+              name: msg.sender_character.name,
+              avatar: msg.sender_character.avatar,
+            }
             : null,
         }))
         .reverse(),
-      next:
-        messages.length === limit
-          ? messages[messages.length - 1]?.created_at
-          : null,
+      next: messages.length === limit
+        ? messages[messages.length - 1]?.created_at
+        : null,
     };
   }
 
@@ -362,7 +391,8 @@ export class ChatService {
     return data?.map((item: any) => item.plugin).filter((p: any) => !!p) || [];
   }
 
-  private createRAGTool(kbIds: string[]) {
+  private async createRAGTool(kbIds: string[]) {
+    const { tool } = await this.getLangchainDeps();
     return tool(
       async ({ query }: { query: string }) => {
         try {
@@ -375,9 +405,10 @@ export class ChatService {
             .limit(5);
 
           if (error) throw error;
-          if (!data || data.length === 0)
+          if (!data || data.length === 0) {
             return "No relevant information found.";
-          return data.map((d: any) => d.content).join("\n\n");
+          }
+          return data.map((d) => d.content).join("\n\n");
         } catch (e: any) {
           return `Error searching knowledge base: ${e.message}`;
         }
@@ -389,11 +420,12 @@ export class ChatService {
         schema: z.object({
           query: z.string().describe("The search query"),
         }),
-      }
+      },
     );
   }
 
-  private createPluginTool(plugin: any) {
+  private async createPluginTool(plugin: any) {
+    const { tool } = await this.getLangchainDeps();
     return tool(
       async (args: any) => {
         try {
@@ -406,14 +438,53 @@ export class ChatService {
         name: plugin.name,
         description: plugin.description,
         schema: jsonSchemaToZod(plugin.schema) as z.ZodObject<any>,
-      }
+      },
     );
+  }
+
+  private buildSystemPrompt(ai: any, kbIds: string[], plugins: any[]): string {
+    const lines = [
+      `你是 ${ai.name}。个性签名：${ai.bio || "无"}。`,
+      ai.origin_prompt ? ai.origin_prompt : "",
+      "输出语言：简体中文。",
+      "工具：",
+      kbIds.length
+        ? "- search_knowledge_base：检索已订阅知识库中的角色/设定/背景/关系等信息。"
+        : "- 无知识库可用，无法检索角色信息。",
+      plugins.length
+        ? plugins.map((p) => `- ${p.name}：${p.description || ""}`).join("\n")
+        : "- 无插件可用。",
+      "规则：",
+      "- 角色设定、关联角色、背景细节一律通过知识库检索，不要凭空编造。",
+      "- 知识库无结果时要明确说明。",
+      "- 任务类请求优先使用插件；不可用则说明原因。",
+      "- 回答简洁分点，避免编造来源或结果。",
+      "表达：允许自然流露情绪和语气，让对话有血有肉，但内容仍需基于知识库或用户输入，不要虚构事实。",
+    ];
+    return lines.filter(Boolean).join("\n");
+  }
+
+  private toChatHistory(
+    history: { sender_type: string; content: unknown }[] | null,
+    HumanMessage: LangchainDeps["HumanMessage"],
+    AIMessage: LangchainDeps["AIMessage"],
+  ) {
+    if (!history) return [];
+    return history
+      .reverse()
+      .map((msg) => {
+        const content = msg.content as any;
+        return msg.sender_type === "user"
+          ? new HumanMessage(content)
+          : new AIMessage(content);
+      })
+      .filter((m) => (m as any).content);
   }
 
   async *streamMessage(
     chatId: string,
     profileId: string,
-    message: MessageContent[]
+    message: MessageContent[],
   ) {
     // 保存用户消息
     await this.saveUserMessage(chatId, profileId, message);
@@ -433,45 +504,31 @@ export class ChatService {
 
     const ai = chatMember.character;
 
-    // 准备工具
+    const { AIMessage, HumanMessage, ChatOpenAI, createAgent } = await this
+      .getLangchainDeps();
+
+    const [kbIds, plugins, historyRes] = await Promise.all([
+      this.getSubscribedKnowledgeBaseIds(ai.id),
+      this.getSubscribedPlugins(profileId),
+      this.supabase
+        .from("messages")
+        .select("sender_type, content")
+        .eq("chat_id", chatId)
+        .order("created_at", { ascending: false })
+        .limit(20),
+    ]);
+    const history = historyRes.data ?? null;
+
     const tools = [];
-
-    // RAG Tool
-    const kbIds = await this.getSubscribedKnowledgeBaseIds(ai.id);
     if (kbIds.length > 0) {
-      tools.push(this.createRAGTool(kbIds));
+      tools.push(await this.createRAGTool(kbIds));
     }
-
-    // Plugin Tools
-    const plugins = await this.getSubscribedPlugins(profileId);
     for (const plugin of plugins) {
-      tools.push(this.createPluginTool(plugin));
+      tools.push(await this.createPluginTool(plugin));
     }
 
-    // 构建上下文和历史记录
-    const { data: history } = await this.supabase
-      .from("messages")
-      .select("sender_type, content")
-      .eq("chat_id", chatId)
-      .order("created_at", { ascending: false })
-      .limit(20);
+    const chatHistory = this.toChatHistory(history, HumanMessage, AIMessage);
 
-    const chatHistory: unknown[] = [];
-    if (history) {
-      chatHistory.push(
-        ...history
-          .reverse()
-          .map((msg) => {
-            const content = msg.content as any;
-            return msg.sender_type === "user"
-              ? new HumanMessage(content)
-              : new AIMessage(content);
-          })
-          .filter((m) => m.content)
-      );
-    }
-
-    // 创建LLM和Agent
     const model = new ChatOpenAI({
       model: "qwen-plus",
       streaming: true,
@@ -482,17 +539,8 @@ export class ChatService {
       },
     });
 
-    const systemPromptContent = `
-    你是 ${ai.name}, ${ai.bio}
-    ${ai.origin_prompt || ""}
+    const systemPromptContent = this.buildSystemPrompt(ai, kbIds, plugins);
 
-    你有以下工具可以使用:
-    - ${kbIds.length > 0 ? "- RAG Tool: 用于从你的知识库中检索信息。\n" : ""}
-    ${plugins.map((p) => `- ${p.name}: ${p.description}`).join("\n")}
-
-    当用户提问时, 如果问题涉及到你的知识库中的信息, 请使用 RAG 工具来检索相关内容.
-    如果用户请求执行特定任务, 请使用相应的插件工具.
-    `;
     const agent = createAgent({
       // @ts-ignore: model parameter type mismatch between ChatOpenAI and expected type
       model,
@@ -504,17 +552,25 @@ export class ChatService {
     let fullResponse = "";
 
     try {
-      for await (const [chunk, _metadata] of await agent.stream(
-        { messages: chatHistory },
-        { streamMode: "messages" }
-      )) {
+      for await (
+        const [chunk, _metadata] of await agent.stream(
+          { messages: chatHistory },
+          { streamMode: "messages" },
+        )
+      ) {
         if (chunk.content && typeof chunk.content === "string") {
           fullResponse += chunk.content;
           yield chunk.content;
         }
       }
     } catch (e: any) {
-      console.error("Agent Stream Error:", e);
+      console.error("Agent Stream Error:", {
+        error: e?.message,
+        chatId,
+        tools: tools.length,
+        kbIds: kbIds.length,
+        plugins: plugins.length,
+      });
       yield `\n[Error: ${e.message}]`;
     } finally {
       // 保存AI消息
@@ -523,7 +579,9 @@ export class ChatService {
         // 更新最后一条消息摘要
         const { error: updateError } = await this.supabase
           .from("chats")
-          .update({ last_message: fullResponse.substring(0, 50) })
+          .update({
+            last_message: fullResponse.substring(0, 50).replace(/\s+/g, " "),
+          })
           .eq("id", chatId);
 
         if (updateError) {
@@ -536,7 +594,7 @@ export class ChatService {
   async saveUserMessage(
     chatId: string,
     profileId: string,
-    message: MessageContent[]
+    message: MessageContent[],
   ) {
     const { error } = await this.supabase.from("messages").insert({
       chat_id: chatId,

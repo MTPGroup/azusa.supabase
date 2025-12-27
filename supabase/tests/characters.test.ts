@@ -1,7 +1,7 @@
 import { assertEquals, assertExists } from "@std/assert";
 import { supabase } from "./shared.ts";
 
-const BASE_URL = Deno.env.get("SUPABASE_URL") ?? "http://127.0.0.1:54321";
+const BASE_URL = Deno.env.get("SUPABASE_URL") ?? "http://127.0.0.1:8000";
 const CHARACTERS_URL = `${BASE_URL}/functions/v1/characters`;
 
 type Character = { id: string };
@@ -13,7 +13,7 @@ denoTest("Characters API 集成测试", async (t) => {
 
   if (!session) {
     throw new Error(
-      "未获取到 Session，请检查 shared.ts 中的登录逻辑以及是否已启动 Supabase"
+      "未获取到 Session，请检查 shared.ts 中的登录逻辑以及是否已启动 Supabase",
     );
   }
   const token = session.access_token;
@@ -38,7 +38,7 @@ denoTest("Characters API 集成测试", async (t) => {
 
     if (response.status === 404) {
       throw new Error(
-        `Function not found at ${CHARACTERS_URL}. Make sure 'supabase start' is running.`
+        `Function not found at ${CHARACTERS_URL}. Make sure 'supabase start' is running.`,
       );
     }
 
@@ -59,7 +59,7 @@ denoTest("Characters API 集成测试", async (t) => {
     assertEquals(result.success, true);
     assertExists(result.data?.characters);
     const found = result.data.characters.find(
-      (c: Character) => c.id === createdId
+      (c: Character) => c.id === createdId,
     );
     assertExists(found);
   });

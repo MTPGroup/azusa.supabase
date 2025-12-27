@@ -1,7 +1,7 @@
 import { assertEquals, assertExists } from "@std/assert";
 import { supabase } from "./shared.ts";
 
-const BASE_URL = Deno.env.get("SUPABASE_URL") ?? "http://127.0.0.1:54321";
+const BASE_URL = Deno.env.get("SUPABASE_URL") ?? "http://127.0.0.1:8000";
 const CONTACTS_URL = `${BASE_URL}/functions/v1/contacts`;
 const CHARACTERS_URL = `${BASE_URL}/functions/v1/characters`;
 
@@ -12,7 +12,7 @@ Deno.test("Contacts API 集成测试", async (t) => {
 
   if (!session) {
     throw new Error(
-      "未获取到 Session，请检查 shared.ts 中的登录逻辑以及是否已启动 Supabase"
+      "未获取到 Session，请检查 shared.ts 中的登录逻辑以及是否已启动 Supabase",
     );
   }
   const token = session.access_token;
@@ -33,8 +33,7 @@ Deno.test("Contacts API 集成测试", async (t) => {
   });
   assertEquals(createCharResp.status, 201);
   const createCharResult = await createCharResp.json();
-  const characterId =
-    createCharResult.data.id ||
+  const characterId = createCharResult.data.id ||
     createCharResult.data?.char?.id ||
     createCharResult.data?.character?.id ||
     createCharResult.data?.id;
@@ -52,7 +51,7 @@ Deno.test("Contacts API 集成测试", async (t) => {
 
       if (response.status === 404) {
         throw new Error(
-          `Function not found at ${CONTACTS_URL}. Make sure 'supabase start' is running.`
+          `Function not found at ${CONTACTS_URL}. Make sure 'supabase start' is running.`,
         );
       }
 
@@ -91,7 +90,7 @@ Deno.test("Contacts API 集成测试", async (t) => {
         assertEquals(response.status, 200);
         const result = await response.json();
         assertEquals(result.success, true);
-      }
+      },
     );
 
     await t.step("GET /contacts - 应包含更新后的昵称", async () => {
@@ -123,7 +122,7 @@ Deno.test("Contacts API 集成测试", async (t) => {
         assertEquals(response.status, 200);
         const result = await response.json();
         assertEquals(result.success, true);
-      }
+      },
     );
 
     await t.step("GET /contacts - 删除后不应包含该联系人", async () => {

@@ -37,7 +37,9 @@ Common commands (run from the repo root):
 
 ## Commit & Pull Request Guidelines
 
-- Commit messages follow a lightweight Conventional Commits style, often prefixed with an emoji, e.g. `✨ feat: ...` or `📝 fix: ...`.
+- Commit messages follow a lightweight Conventional Commits style, often prefixed with an emoji, e.g. `✨ ...` or `📝 ...`.
+- Prefer concise中文描述，格式：`<emoji> <简短中文概要>`;
+- 主题行尽量一句话说清“做了什么/为什么”，避免冗长或空洞词（如“update”、“fix”无上下文）。
 - PRs should include: a short summary, testing notes (commands run), and any relevant configuration changes.
 - Link related issues when available and include screenshots only when changing observable UI or API responses.
 
