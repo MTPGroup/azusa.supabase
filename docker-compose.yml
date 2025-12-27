@@ -71,6 +71,7 @@ services:
     volumes:
       # https://github.com/supabase/supabase/issues/12661
       - ./volumes/api/kong.yml:/home/kong/temp.yml:ro,z
+      - ./volumes/api/ssl:/home/kong/ssl:ro,z
     depends_on:
       db:
         condition: service_healthy
@@ -84,6 +85,8 @@ services:
       KONG_PLUGINS: request-transformer,cors,key-auth,acl,basic-auth,request-termination,ip-restriction
       KONG_NGINX_PROXY_PROXY_BUFFER_SIZE: 160k
       KONG_NGINX_PROXY_PROXY_BUFFERS: 64 160k
+      KONG_SSL_CERT: /home/kong/ssl/fullchain.pem
+      KONG_SSL_CERT_KEY: /home/kong/ssl/privkey.pem
       SUPABASE_ANON_KEY: ${ANON_KEY}
       SUPABASE_SERVICE_KEY: ${SERVICE_ROLE_KEY}
       DASHBOARD_USERNAME: ${DASHBOARD_USERNAME}
@@ -378,8 +381,8 @@ services:
       DASHSCOPE_API_BASE_URL: ${DASHSCOPE_API_BASE_URL}
     command: ["start", "--main-service", "/home/deno/functions/main"]
 
-  knowledge-worker:
-    image: denoland/deno:alpine-1.45.5
+  workers:
+    image: denoland/deno:alpine-2.6.3
     restart: unless-stopped
     depends_on:
       kong:
@@ -390,12 +393,12 @@ services:
       DASHSCOPE_API_KEY: ${DASHSCOPE_API_KEY}
       DASHSCOPE_API_BASE_URL: ${DASHSCOPE_API_BASE_URL}
       POLL_INTERVAL_MS: ${KNOWLEDGE_PROCESS_POLL_MS:-10000}
-      DENO_DIR: /deno-dir
+      # DENO_DIR: /deno-dir
     volumes:
-      - ./:/app:ro
-      - worker-deno-dir:/deno-dir
+      - ./supabase/workers/:/app/workers:rw
+      # - worker-deno-dir:/deno-dir
     working_dir: /app
-    command: ["deno", "run", "--allow-net", "--allow-env", "--allow-read", "--no-lock", "/app/supabase/workers/knowledge-process-worker.ts"]
+    command: ["deno", "run", "--allow-net", "--allow-env", "--allow-read", "/app/workers/knowledge-embedding-worker.ts"]
 
 
   # analytics 服务已禁用以提升性能，如需启用请取消注释
