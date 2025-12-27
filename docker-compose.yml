@@ -10,7 +10,7 @@ name: supabase
 services:
   studio:
     container_name: supabase-studio
-    image: supabase/studio:2025.12.17-sha-43f4f7f
+    image: supabase/studio:2025.12.23-sha-f3af2c3
     restart: unless-stopped
     healthcheck:
       test:
@@ -63,7 +63,7 @@ services:
 
   kong:
     container_name: supabase-kong
-    image: kong:2.8.1
+    image: kong:3.9.1
     restart: unless-stopped
     ports:
       - ${KONG_HTTP_PORT}:8000/tcp
@@ -79,7 +79,7 @@ services:
       #   condition: service_healthy
     environment:
       KONG_DATABASE: "off"
-      KONG_DECLARATIVE_CONFIG: /home/kong/kong.yml
+      KONG_DECLARATIVE_CONFIG: /tmp/kong.yml
       # https://github.com/supabase/cli/issues/14
       KONG_DNS_ORDER: LAST,A,CNAME
       KONG_PLUGINS: request-transformer,cors,key-auth,acl,basic-auth,request-termination,ip-restriction
@@ -92,7 +92,7 @@ services:
       DASHBOARD_USERNAME: ${DASHBOARD_USERNAME}
       DASHBOARD_PASSWORD: ${DASHBOARD_PASSWORD}
     # https://unix.stackexchange.com/a/294837
-    entrypoint: bash -c 'eval "echo \"$$(cat ~/temp.yml)\"" > ~/kong.yml && /docker-entrypoint.sh kong docker-start'
+    entrypoint: bash -c 'eval "echo \"$$(cat /home/kong/temp.yml)\"" > /tmp/kong.yml && /docker-entrypoint.sh kong docker-start'
 
   auth:
     container_name: supabase-auth
@@ -206,7 +206,7 @@ services:
 
   nginx:
     container_name: supabase-nginx
-    image: nginx:alpine
+    image: nginx:stable
     restart: unless-stopped
     ports:
       - 8081:80
@@ -215,7 +215,7 @@ services:
 
   rest:
     container_name: supabase-rest
-    image: postgrest/postgrest:v14.1
+    image: postgrest/postgrest:v14.2
     restart: unless-stopped
     depends_on:
       db:
@@ -236,7 +236,7 @@ services:
   realtime:
     # This container name looks inconsistent but is correct because realtime constructs tenant id by parsing the subdomain
     container_name: realtime-dev.supabase-realtime
-    image: supabase/realtime:v2.68.0
+    image: supabase/realtime:v2.69.0
     restart: unless-stopped
     depends_on:
       db:
@@ -274,7 +274,7 @@ services:
   # To use S3 backed storage: docker compose -f docker-compose.yml -f docker-compose.s3.yml up
   storage:
     container_name: supabase-storage
-    image: supabase/storage-api:v1.33.0
+    image: supabase/storage-api:v1.33.2
     restart: unless-stopped
     volumes:
       - ./volumes/storage:/var/lib/storage:z
@@ -435,7 +435,7 @@ services:
   # Comment out everything below this point if you are using an external Postgres database
   db:
     container_name: supabase-db
-    image: supabase/postgres:15.8.1.085
+    image: supabase/postgres:17.6.1.066
     restart: unless-stopped
     ports:
       - 5433:5432
