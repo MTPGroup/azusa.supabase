@@ -13,9 +13,6 @@
     "@supabase/supabase-js": "jsr:@supabase/supabase-js@^2.89.0",
     "hono": "npm:hono@^4.11.1",
     "langchain": "npm:langchain@^1.2.2",
-    "officeparser": "npm:officeparser@^3.1.4",
-    "mammoth": "npm:mammoth@1.8.0",
-    "pdf-parse": "npm:pdf-parse@1.1.1",
     "zod": "npm:zod@^4.2.1"
   }
 }

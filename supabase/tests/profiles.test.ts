@@ -62,6 +62,35 @@ Deno.test("Profiles API 集成测试", async (t) => {
     assertEquals(result.data.username, newUsername);
   });
 
+  await t.step("POST /profiles/avatar - 应该成功上传头像并返回 URL", async () => {
+    const form = new FormData();
+    const file = new File(
+      [new TextEncoder().encode("avatar-bytes")],
+      `avatar-${Date.now()}.png`,
+      { type: "image/png" },
+    );
+    form.append("file", file);
+
+    const response = await fetch(`${FUNCTION_URL}/avatar`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: form,
+    });
+
+    const bodyText = await response.text();
+    if (response.status !== 200) {
+      throw new Error(`avatar upload failed status=${response.status}, body=${bodyText}`);
+    }
+    const result = JSON.parse(bodyText);
+
+    assertEquals(result.success, true);
+    assertExists(result.data);
+    assertExists(result.data.avatarUrl);
+    assertEquals(result.data.profile.avatar, result.data.avatarUrl);
+  });
+
   await t.step("PUT /profiles - 应该验证输入数据 (空用户名)", async () => {
     const response = await fetch(FUNCTION_URL, {
       method: "PUT",
