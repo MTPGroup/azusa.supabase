@@ -1,0 +1,11 @@
+{
+  "nodeModulesDir": "auto",
+  "imports": {
+    "@langchain/classic": "npm:@langchain/classic@^1.0.7",
+    "@langchain/community": "npm:@langchain/community@^1.1.1",
+    "@langchain/openai": "npm:@langchain/openai@^1.2.0",
+    "@langchain/textsplitters": "npm:@langchain/textsplitters@^1.0.1",
+    "@supabase/supabase-js": "jsr:@supabase/supabase-js@^2.89.0",
+    "langchain": "npm:langchain@^1.2.3"
+  }
+}

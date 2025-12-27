@@ -1,27 +1,27 @@
-import { createClient } from "jsr:@supabase/supabase-js@2.89.0";
-import { Document } from "npm:langchain@1.2.2";
-import { OpenAIEmbeddings } from "npm:@langchain/openai@1.2.0";
-import { RecursiveCharacterTextSplitter } from "npm:@langchain/textsplitters@1.0.1";
-import { WebPDFLoader } from "npm:@langchain/community@1.1.1/document_loaders/web/pdf";
-import { DocxLoader } from "npm:@langchain/community@1.1.1/document_loaders/fs/docx";
-import { CSVLoader } from "npm:@langchain/community@1.1.1/document_loaders/fs/csv";
-import { JSONLoader } from "npm:@langchain/classic@1.0.7/document_loaders/fs/json";
-import { TextLoader } from "npm:@langchain/classic@1.0.7/document_loaders/fs/text";
-import { type Database } from "../functions/_shared/database.types.ts";
+import { createClient } from "@supabase/supabase-js";
+import { Document } from "langchain";
+import { OpenAIEmbeddings } from "@langchain/openai";
+import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
+import { WebPDFLoader } from "@langchain/community/document_loaders/web/pdf";
+import { DocxLoader } from "@langchain/community/document_loaders/fs/docx";
+import { CSVLoader } from "@langchain/community/document_loaders/fs/csv";
+import { JSONLoader } from "@langchain/classic/document_loaders/fs/json";
+import { TextLoader } from "@langchain/classic/document_loaders/fs/text";
+import { type Database } from "./database.types.ts";
 
-const SUPABASE_URL =
-  Deno.env.get("SUPABASE_URL") ?? Deno.env.get("LOCAL_DEV_SUPABASE_URL") ?? "http://kong:8000";
-const SERVICE_ROLE_KEY =
-  Deno.env.get("SERVICE_ROLE_KEY") ??
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ??
+  Deno.env.get("LOCAL_DEV_SUPABASE_URL") ?? "http://kong:8000";
+const SERVICE_ROLE_KEY = Deno.env.get("SERVICE_ROLE_KEY") ??
   Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ??
   Deno.env.get("LOCAL_DEV_SERVICE_ROLE_KEY") ??
   "";
 const POLL_INTERVAL_MS = Number(Deno.env.get("POLL_INTERVAL_MS") ?? "10000");
 const DASHSCOPE_API_KEY = Deno.env.get("DASHSCOPE_API_KEY") ?? "";
-const DASHSCOPE_API_BASE_URL = Deno.env.get("DASHSCOPE_API_BASE_URL") ?? undefined;
+const DASHSCOPE_API_BASE_URL = Deno.env.get("DASHSCOPE_API_BASE_URL") ??
+  undefined;
 
 if (!SERVICE_ROLE_KEY) {
-  console.error("[knowledge-worker] SERVICE_ROLE_KEY is required");
+  console.error("[embedding-worker] SERVICE_ROLE_KEY is required");
   Deno.exit(1);
 }
 
@@ -92,7 +92,7 @@ async function processOne(): Promise<void> {
     .single();
 
   if (fetchError || !fileRecord) {
-    console.log("[knowledge-worker] queue empty");
+    console.log("[embedding-worker] queue empty");
     return;
   }
 
@@ -106,7 +106,7 @@ async function processOne(): Promise<void> {
     .download(fileRecord.file_path);
 
   if (downloadError || !downloaded) {
-    console.error("[knowledge-worker] download failed", downloadError);
+    console.error("[embedding-worker] download failed", downloadError);
     await supabase
       .from("knowledge_files")
       .update({ status: "failed", error_message: String(downloadError) })
@@ -134,7 +134,11 @@ async function processOne(): Promise<void> {
       ];
     } else {
       const fileType = (content as Blob).type || "text/plain";
-      const loaded = await parseFileContent(content as Blob, fileType, fileRecord.file_name);
+      const loaded = await parseFileContent(
+        content as Blob,
+        fileType,
+        fileRecord.file_name,
+      );
       parsedDocs = loaded.map((doc) => ({
         ...doc,
         metadata: {
@@ -183,7 +187,10 @@ async function processOne(): Promise<void> {
     const texts = splitDocs.map((d: Document) => d.pageContent);
     const vectors = await embeddings.embedDocuments(texts);
 
-    const documentsToInsert = splitDocs.map((splitDoc: Document, index: number,) => ({
+    const documentsToInsert = splitDocs.map((
+      splitDoc: Document,
+      index: number,
+    ) => ({
       knowledge_base_id: fileRecord.knowledge_base_id,
       file_id: fileRecord.id,
       content: splitDoc.pageContent,
@@ -207,10 +214,10 @@ async function processOne(): Promise<void> {
       .eq("id", fileRecord.id);
 
     console.log(
-      `[knowledge-worker] processed file ${fileRecord.id}, chunks=${splitDocs.length}`,
+      `[embedding-worker] processed file ${fileRecord.id}, chunks=${splitDocs.length}`,
     );
   } catch (e) {
-    console.error("[knowledge-worker] processing failed", e);
+    console.error("[embedding-worker] processing failed", e);
     await supabase
       .from("knowledge_files")
       .update({ status: "failed", error_message: String(e) })
@@ -220,7 +227,7 @@ async function processOne(): Promise<void> {
 
 async function loop() {
   console.log(
-    `[knowledge-worker] polling ${SUPABASE_URL} every ${POLL_INTERVAL_MS}ms with service key`,
+    `[embedding-worker] polling ${SUPABASE_URL} every ${POLL_INTERVAL_MS}ms with service key`,
   );
   while (true) {
     await processOne();

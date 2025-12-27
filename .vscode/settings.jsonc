@@ -1,0 +1,9 @@
+{
+  // "deno.enablePaths": [
+  //   "./supabase/functions",
+  //   "./supabase/tests",
+  //   "./utils",
+  //   "./supabase/workers"
+  // ],
+  // "deno.config": "./deno.json"
+}

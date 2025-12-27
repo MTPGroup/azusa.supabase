@@ -32,10 +32,17 @@ if (code === 0) {
   const types = new TextDecoder().decode(stdout);
   await Deno.writeTextFile(
     "supabase/functions/_shared/database.types.ts",
-    types
+    types,
   );
   console.log(
-    "✅ Types generated successfully at supabase/functions/_shared/database.types.ts"
+    "✅ Types generated successfully at supabase/functions/_shared/database.types.ts",
+  );
+  await Deno.writeTextFile(
+    "supabase/workers/database.types.ts",
+    types,
+  );
+  console.log(
+    "✅ Types generated successfully at supabase/workers/database.types.ts",
   );
 } else {
   console.error("❌ Error generating types:");
