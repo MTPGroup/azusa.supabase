@@ -15,6 +15,22 @@ const makeSafeStorageFileName = (fileName: string): string => {
   return cleaned.length > 0 ? cleaned : "avatar";
 };
 
+const rewritePublicUrl = (url: string): string => {
+  const override = Deno.env.get("SUPABASE_PUBLIC_URL") ??
+    Deno.env.get("PUBLIC_API_URL");
+  console.log(`Override URL: ${override}`);
+  if (!override) return url;
+  try {
+    const u = new URL(url);
+    const o = new URL(override);
+    u.protocol = o.protocol;
+    u.host = o.host;
+    return u.toString();
+  } catch (_e) {
+    return url;
+  }
+};
+
 const ALLOWED_AVATAR_TYPES = new Set([
   "image/jpeg",
   "image/png",
@@ -201,7 +217,7 @@ app.post(
       );
     }
 
-    const avatarUrl = publicUrlData.publicUrl;
+    const avatarUrl = rewritePublicUrl(publicUrlData.publicUrl);
 
     const { data: profile, error: updateError } = await supabase
       .from("profiles")

@@ -75,6 +75,16 @@ docker-compose logs -f functions
 - Email: `test@example.com`
 - Password: `123456`
 
+### 5. 上传头像（示例）
+
+```bash
+curl -X POST http://localhost:8000/functions/v1/profiles/avatar \
+  -H "Authorization: Bearer <user_token>" \
+  -F "file=@/path/to/avatar.png"
+```
+
+- 支持 jpeg/png/webp/gif，大小 ≤ 5MB，返回公共可访问 URL。
+
 ## 🧪 测试
 
 ```bash
@@ -90,6 +100,7 @@ TEST_ENV=cli deno test --allow-all
 | 模块 | 端点 | 说明 |
 |------|------|------|
 | Profiles | `GET/PUT /profiles` | 用户资料管理 |
+| Profiles | `POST /profiles/avatar` | 上传头像（multipart，字段 `file`，5MB 内的 jpeg/png/webp/gif，返回公共 URL） |
 | Settings | `GET/PATCH /settings` | 用户设置管理 |
 | Characters | `CRUD /characters` | AI 角色管理 |
 | Contacts | `CRUD /contacts` | 联系人管理 |
